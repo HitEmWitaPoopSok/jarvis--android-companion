@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The PC is reached over Tailscale, which is already encrypted end to end by WireGuard, at an
+     address the user typed in; it speaks plain HTTP. Everything else (ntfy.sh) is HTTPS. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

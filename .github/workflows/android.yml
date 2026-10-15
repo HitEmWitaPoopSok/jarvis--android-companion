@@ -24,7 +24,25 @@ jobs:
         with:
           gradle-version: "8.10.2"
 
-      - name: Unit tests and signed APK
+      - name: Restore the signing key
+        id: key
+        env:
+          KEYSTORE_B64: ${{ secrets.JARVIS_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/jarvis.keystore"
+            echo "JARVIS_KEYSTORE_FILE=$RUNNER_TEMP/jarvis.keystore" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No JARVIS_KEYSTORE_B64 secret: building with the debug key, not publishing."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Unit tests and APK
+        env:
+          JARVIS_KEYSTORE_PASSWORD: ${{ secrets.JARVIS_KEYSTORE_PASSWORD }}
+          JARVIS_KEY_ALIAS: ${{ secrets.JARVIS_KEY_ALIAS }}
+          JARVIS_KEY_PASSWORD: ${{ secrets.JARVIS_KEY_PASSWORD }}
         run: |
           gradle --no-daemon -PappVersion=1.0.${{ github.run_number }} -PappCode=${{ github.run_number }} test assembleRelease
 
@@ -39,7 +57,7 @@ jobs:
           path: dist/*.apk
 
       - name: Publish a release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.key.outputs.signed == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}

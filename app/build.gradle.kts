@@ -18,25 +18,27 @@ android {
         versionName = appVersion
     }
 
-    // A fixed signing key, committed on purpose: every build is signed the same way, so a new
-    // version installs over the old one and keeps your pairing. It is a personal sideloaded
-    // app; this key protects nothing but update continuity.
-    signingConfigs {
-        create("jarvis") {
-            storeFile = file("jarvis.keystore")
-            storePassword = "jarvis-companion"
-            keyAlias = "jarvis"
-            keyPassword = "jarvis-companion"
+    // Release signing comes from the environment (CI secrets or your shell), never from the repo:
+    //   JARVIS_KEYSTORE_FILE, JARVIS_KEYSTORE_PASSWORD, JARVIS_KEY_ALIAS, JARVIS_KEY_PASSWORD
+    // Without them (a plain local build) the APK is signed with the Android debug key, which is
+    // fine for trying it out but will not update over a release signed with your real key.
+    val keystorePath = System.getenv("JARVIS_KEYSTORE_FILE")
+    val hasReleaseKey = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
+    if (hasReleaseKey) {
+        signingConfigs {
+            create("jarvis") {
+                storeFile = file(keystorePath!!)
+                storePassword = System.getenv("JARVIS_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("JARVIS_KEY_ALIAS")
+                keyPassword = System.getenv("JARVIS_KEY_PASSWORD")
+            }
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("jarvis")
-        }
-        debug {
-            signingConfig = signingConfigs.getByName("jarvis")
+            signingConfig = signingConfigs.getByName(if (hasReleaseKey) "jarvis" else "debug")
         }
     }
 

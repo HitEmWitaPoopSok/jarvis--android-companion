@@ -31,8 +31,11 @@ the Tailscale address only, never on the whole network and never on the internet
 ## Building
 Android Studio isn't needed: `gradle test assembleRelease` (JDK 17, Android SDK 35) builds
 `app/build/outputs/apk/release/app-release.apk`. CI does this on every push and publishes the APK.
-The APK is signed with a fixed key committed in `app/jarvis.keystore`, deliberately, so updates install
-over each other. It is a personal sideloaded app; that key protects nothing else.
+Release builds are signed with your own key, supplied through environment variables
+(`JARVIS_KEYSTORE_FILE`, `JARVIS_KEYSTORE_PASSWORD`, `JARVIS_KEY_ALIAS`, `JARVIS_KEY_PASSWORD`); in CI
+they come from repository secrets (`JARVIS_KEYSTORE_B64` plus the other three). Keep one key forever so
+updates install over each other. Without them the build uses the Android debug key and CI will not
+publish a release. No key is stored in this repo.
 
 No third-party libraries: plain Android views, `HttpURLConnection`, the system speech recogniser and
 text-to-speech.
